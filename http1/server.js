@@ -1,16 +1,13 @@
-const https = require("node:https"); // Módulo HTTP/1.1
+const https = require("node:https");
 const fs = require("node:fs");
 const path = require("node:path");
 const { readFileSync } = fs;
-const zlib = require("node:zlib"); // Você não está a usar isto, mas estava no seu ficheiro
+const zlib = require("node:zlib");
 
-// --- INÍCIO: Correcção 1 - Adicionar Prom-Client ---
 const promClient = require("prom-client");
 const register = new promClient.Registry();
 promClient.collectDefaultMetrics({ register });
-// --- FIM: Correcção 1 ---
 
-// (O seu código brotliOptions... httpsPort... etc.)
 const brotliOptions = {
   chunkSize: 32 * 1024,
   params: {
@@ -19,7 +16,7 @@ const brotliOptions = {
 };
 
 const httpsPort = 8045;
-const httpsHost = "0.0.0.0"; // Corrigido de 'localhost' para '0.0.0.0' para funcionar no Docker
+const httpsHost = "0.0.0.0";
 
 const options = {
   key: readFileSync(path.resolve("./certs/server-key.pem")),
@@ -33,14 +30,11 @@ https
       return res.end();
     }
 
-    // --- INÍCIO: Correcção 2 - Reescrever /metrics para H1.1 ---
     if (req.url === "/metrics") {
-      // Use a sintaxe padrão do HTTP/1.1
       res.writeHead(200, { "Content-Type": register.contentType });
       res.end(await register.metrics());
       return;
     }
-    // --- FIM: Correcção 2 ---
 
     const filePath = path.join(
       __dirname,
@@ -59,8 +53,6 @@ https
       }
     });
 
-    // Nota: Você definiu brotliOptions mas não o está a usar aqui.
-    // O seu código anterior comprimia, este não.
     stream.pipe(res);
   })
   .listen(httpsPort, httpsHost, () => {
