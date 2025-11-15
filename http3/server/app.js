@@ -1,43 +1,67 @@
-const https = require("https");
-const fs = require("fs");
+const http2 = require("node:http2");
+const fs = require("node:fs");
+const path = require("node:path");
+const promClient = require("prom-client");
+const register = new promClient.Registry();
 
 const options = {
   key: fs.readFileSync("./certs/localhost.key"),
   cert: fs.readFileSync("./certs/localhost.crt"),
+  allowHTTP1: true,
 };
 
 const PORT = 8443;
 const HOST = "0.0.0.0";
 
-https
-  .createServer(options, (req, res) => {
-    const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-    const htmlResponse = `
-      <!DOCTYPE html>
-      <html lang="pt">
-      <head>
-        <meta charset="UTF-8">
-        <title>Servidor Node.js</title>
-        <style>
-          body { font-family: sans-serif; background: #f0f0f0; color: #333; }
-          div { background: #fff; border-radius: 8px; padding: 20px; margin: 40px; }
-          h1 { color: #004a99; }
-          p { font-size: 1.1em; }
-        </style>
-      </head>
-      <body>
-        <div>
-          <h1>Olá do Servidor Node.js (H2)!</h1>
-          <p>Esta página está a ser servida diretamente pelo seu backend Node.js.</p>
-          <p>O NGINX viu o seu IP como: <strong>${clientIp}</strong></p>
-        </div>
-      </body>
-      </html>
-    `;
+promClient.collectDefaultMetrics({ register });
 
-    res.end(htmlResponse);
-  })
-  .listen(PORT, HOST, () => {
-    console.log(`Server Node.js HTTPS (H2) running at https://${HOST}:${PORT}`);
+const server = http2.createSecureServer(options, async (req, res) => {
+  if (req.url === "/metrics") {
+    if (res.stream) {
+      res.stream.respond({
+        "content-type": register.contentType,
+        ":status": 200,
+      });
+      res.stream.end(await register.metrics());
+    } else {
+      res.writeHead(200, { "content-type": register.contentType });
+      res.end(await register.metrics());
+    }
+    return;
+  }
+
+  const filePath = path.join(
+    __dirname,
+    "src",
+    req.url === "/" ? "index.html" : req.url
+  );
+
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      if (res.stream) {
+        res.stream.respond({ "content-type": "text/plain", ":status": 404 });
+        res.stream.end("Ficheiro não encontrado.");
+      } else {
+        res.writeHead(404, { "content-type": "text/plain" });
+        res.end("Ficheiro não encontrado.");
+      }
+      return;
+    }
+
+    const ext = path.extname(filePath);
+    const contentType =
+      ext === ".html" ? "text/html" : "application/octet-stream"; // Simplificado
+
+    if (res.stream) {
+      res.stream.respond({ "content-type": contentType, ":status": 200 });
+      res.stream.end(data);
+    } else {
+      res.writeHead(200, { "content-type": contentType });
+      res.end(data);
+    }
   });
+});
+
+server.listen(PORT, HOST, () => {
+  console.log(`Servidor HTTP/2 a correr em https://${HOST}:${PORT}`);
+});
