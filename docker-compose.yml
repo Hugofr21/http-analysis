@@ -1,0 +1,57 @@
+# A 'version' é obsoleta, pode ser removida
+services:
+  nginx:
+    build: ./http3/nginx
+    container_name: http3-proxy
+    ports:
+      - "443:443/tcp"
+      - "443:443/udp"
+      - "8080:8080"
+    depends_on:
+      - node-app
+
+  node-app:
+    build: ./http3/server
+    container_name: node-backend
+
+  node-app-http2:
+    build: ./http2
+    container_name: node-backend-http2
+    ports:
+      - "8044:8044"
+
+  node-app-http1:
+    build: ./http1
+    container_name: node-backend-http1
+    ports:
+      - "8045:8045"
+
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:latest
+    container_name: nginx-exporter
+    command: -nginx.scrape-uri=http://nginx:8080/stub_status
+    depends_on:
+      - nginx
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command: --config.file=/etc/prometheus/prometheus.yml
+    depends_on:
+      - nginx-exporter
+      - node-app-http1
+      - node-app-http2
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+    depends_on:
+      - prometheus

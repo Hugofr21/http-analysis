@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Grid (10x10)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            /* Removido o 'display: flex' para permitir que a grelha cresça e role a página */
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+
+        .grid-container {
+            display: grid;
+            /* MUDANÇA 1: Alterado de 5 para 10 colunas */
+            grid-template-columns: repeat(10, 1fr);
+            gap: 10px;
+            /* Removido 'width' e 'height' para permitir que a grelha seja fluida */
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .grid-item {
+            position: relative;
+            width: 100%;
+            /* MUDANÇA 2: Alterado de 5% para 100%.
+              Isto cria um quadrado perfeito (altura = 100% da largura).
+              O seu valor original de 5% tornava os itens muito baixos.
+            */
+            padding-top: 100%;
+            overflow: hidden;
+            background-color: #333;
+            /* Cor de fundo enquanto as imagens carregam */
+        }
+
+        .grid-item img {
+            /* O seu CSS original para centrar a imagem estava correto */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="grid-container"></div>
+
+    <script>
+
+        (function () {
+            const container = document.querySelector('.grid-container');
+
+
+            const baseImagePath = './cut_images/cut_images_3WEVDJjTl5RY8M/image_part_';
+
+
+            for (let i = 1; i <= 100; i++) {
+
+                const imageNumber = String(i).padStart(3, '0');
+                const imageSrc = `${baseImagePath}${imageNumber}.jpg`;
+
+
+                const gridItem = document.createElement('div');
+                gridItem.className = 'grid-item';
+
+                const img = document.createElement('img');
+                img.src = imageSrc;
+                img.alt = `Image part ${i}`;
+
+
+                img.onerror = () => {
+                    img.style.display = 'none';
+                    gridItem.style.backgroundColor = '#f0f0f0';
+                };
+
+
+                gridItem.appendChild(img);
+                container.appendChild(gridItem);
+            }
+        })();
+    </script>
+
+</body>
+
+</html>

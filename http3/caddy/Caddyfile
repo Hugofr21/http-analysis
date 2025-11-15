@@ -1,0 +1,13 @@
+: http3/caddy/Caddyfile
+
+{
+  log {
+    level DEBUG
+  }
+}
+
+meu-projeto.test {
+  tls /etc/ssl/fullchain.pem /etc/ssl/privkey.pem
+
+  reverse_proxy node-app:3000
+}

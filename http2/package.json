@@ -1,0 +1,16 @@
+{
+  "name": "my-express-app",
+  "version": "1.0.0",
+  "description": "A simple Express.js application",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "express": "5.1.0",
+    "mime-types": "3.0.1",
+    "prom-client": "^15.1.3"
+  }
+}

@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 15s # A cada 15 segundos
+
+scrape_configs:
+  - job_name: 'prometheus'
+    # O Prometheus a raspar-se a si próprio
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'nginx-proxy'
+    # Lemos o exporter do NGINX (que criaremos no docker-compose)
+    static_configs:
+      - targets: ['nginx-exporter:9113']
+
+  - job_name: 'node-http1'
+    metrics_path: /metrics # O endpoint que criámos
+    scheme: https # Os nossos servidores node usam HTTPS
+    tls_config:
+      insecure_skip_verify: true # Ignorar os certificados auto-assinados (mkcert)
+    static_configs:
+      - targets: ['node-app-http1:8045'] # Nome do serviço e porta
+
+  - job_name: 'node-http2'
+    metrics_path: /metrics
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    static_configs:
+      - targets: ['node-app-http2:8044']
